@@ -38,7 +38,7 @@ async function Run()
 		await Security.UnlockKeychain(CustomKeychain, keychainPassword)
 		await Security.ImportCertificateFromFile(CustomKeychain, P12File.name, P12Password)
 		await Security.SetListKeychains(CustomKeychain)
-		await Security.AllowAccessForAppleTools(CustomKeychain)
+		await Security.AllowAccessForAppleTools(CustomKeychain, keychainPassword)
 		await Security.ShowListKeychains()
 		await Security.ShowCodeSignings(CustomKeychain)
 	} catch (ex: any) {

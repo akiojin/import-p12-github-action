@@ -97,9 +97,9 @@ export class Security
 		return exec.exec('security', ['list-keychains', '-d', 'user', '-s', keychain])
 	}
 
-	static AllowAccessForAppleTools(keychain: string): Promise<number>
+	static AllowAccessForAppleTools(keychain: string, password: string): Promise<number>
 	{
-		return exec.exec('security', ['set-key-partition-list', '-S', 'apple-tool:,apple:', '-s', '-k', keychain])
+		return exec.exec('security', ['set-key-partition-list', '-S', 'apple-tool:,apple:', '-s', '-k', password, keychain])
 	}
 
 	static FindGenericPassword(service: string): Promise<number>
