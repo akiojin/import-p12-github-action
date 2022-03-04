@@ -25,10 +25,10 @@ async function Run()
 		core.setSecret(keychainPassword)
 
 		if (P12Base64 === '') {
-			throw new Error('p12-base64 is null');
+			throw new Error('p12-base64 is null')
 		}
 		if (P12Password === '') {
-			throw new Error('p12-password is null');
+			throw new Error('p12-password is null')
 		}
 
 		const P12File = tmp.fileSync()
@@ -38,8 +38,11 @@ async function Run()
 		await Security.UnlockKeychain(CustomKeychain, keychainPassword)
 		await Security.ImportCertificateFromFile(CustomKeychain, P12File.name, P12Password)
 		await Security.SetListKeychains(CustomKeychain)
+		await Security.AllowAccessForAppleTools(CustomKeychain)
+		await Security.ShowListKeychains()
+		await Security.ShowCodeSignings(CustomKeychain)
 	} catch (ex: any) {
-		core.setFailed(ex.message);
+		core.setFailed(ex.message)
 	}
 }
 

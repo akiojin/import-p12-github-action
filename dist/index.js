@@ -7475,8 +7475,14 @@ class Security {
     static SetListKeychains(keychain) {
         return exec.exec('security', ['list-keychains', '-d', 'user', '-s', keychain]);
     }
+    static AllowAccessForAppleTools(keychain) {
+        return exec.exec('security', ['set-key-partition-list', '-S', 'apple-tool:,apple:', '-s', '-k', keychain]);
+    }
     static FindGenericPassword(service) {
         return exec.exec('security', ['find-generic-password', '-s', `"${service}"`]);
+    }
+    static ShowCodeSignings(keychain) {
+        return exec.exec('security', ['find-identity', '-p', 'codesigning', '-v', keychain]);
     }
 }
 exports.Security = Security;
@@ -7553,6 +7559,9 @@ function Run() {
             yield Security_1.Security.UnlockKeychain(CustomKeychain, keychainPassword);
             yield Security_1.Security.ImportCertificateFromFile(CustomKeychain, P12File.name, P12Password);
             yield Security_1.Security.SetListKeychains(CustomKeychain);
+            yield Security_1.Security.AllowAccessForAppleTools(CustomKeychain);
+            yield Security_1.Security.ShowListKeychains();
+            yield Security_1.Security.ShowCodeSignings(CustomKeychain);
         }
         catch (ex) {
             core.setFailed(ex.message);
