@@ -1,0 +1,22 @@
+name: 'Import P12 GitHub action'
+description: 'Import P12 GitHub action'
+inputs:
+  p12-base64:
+    description: 'P12 base64-encoded data'
+    required: true
+    default: ''
+  p12-password:
+    description: 'P12 Password'
+    required: true
+    default: ''
+  keychain-password:
+    description: ''
+    required: false
+    default: ''
+runs:
+  using: 'node16'
+  main: 'dist/index.js'
+  post: 'dist/index.js'
+branding:
+  icon: "upload-cloud"
+  color: "orange"
