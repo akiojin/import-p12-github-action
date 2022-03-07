@@ -36,7 +36,7 @@ export class Security
 	static UnlockKeychain(keychain?: string, password?: string): Promise<number>
 	{
 		if (password == null) {
-			throw new Error('Password required.')
+			throw new Error('UnlockKeychain: Password required.')
 		}
 
 		if (keychain != null) {
@@ -46,15 +46,18 @@ export class Security
 		}
 	}
 
-	static async CreateKeychain(keychain: string, password: string): Promise<number>
+	static CreateKeychain(keychain: string, password: string): Promise<number>
 	{
 		if (password === '') {
-			throw new Error('Password required.')
+			throw new Error('CreaterKeychain: Password required.')
 		}
 
-		await exec.exec('security', ['create-keychain', '-p', password, keychain])
-		// Default settings
-		return exec.exec('security', ['set-keychain-settings', '-lut', '21600', keychain])
+		return exec.exec('security', ['create-keychain', '-p', `${password}`, keychain])
+	}
+
+	static SetKeychainTimeout(keychain: string, seconds: number)
+	{
+		return exec.exec('security', ['set-keychain-settings', '-lut', seconds.toString(), keychain])
 	}
 
 	static DeleteKeychain(keychain: string): Promise<number>
@@ -99,7 +102,15 @@ export class Security
 
 	static AllowAccessForAppleTools(keychain: string, password: string): Promise<number>
 	{
-		return exec.exec('security', ['set-key-partition-list', '-S', 'apple-tool:,apple:', '-s', '-k', password, keychain])
+		const args: string[] = [
+			'set-key-partition-list',
+			'-S', 'apple-tool:,apple:',
+			'-s',
+			'-k', password,
+			keychain
+		]
+
+		return exec.exec('security', args)
 	}
 
 	static FindGenericPassword(service: string): Promise<number>

@@ -5,6 +5,7 @@ export declare class Security {
     static UnlockKeychain(keychain: string, password: string): Promise<number>;
     static UnlockKeychain(password: string): Promise<number>;
     static CreateKeychain(keychain: string, password: string): Promise<number>;
+    static SetKeychainTimeout(keychain: string, seconds: number): Promise<number>;
     static DeleteKeychain(keychain: string): Promise<number>;
     static SetKeychain(name: string, keychain: string): Promise<number>;
     static SetDefaultKeychain(keychain: string): Promise<number>;

@@ -1,5 +1,5 @@
 name: 'Import P12 GitHub action'
-description: 'Import P12 GitHub action'
+description: 'P12 Import a certificate into the specified keychain GitHub Action'
 inputs:
   p12-base64:
     description: 'P12 base64-encoded data'
@@ -9,14 +9,17 @@ inputs:
     description: 'P12 Password'
     required: true
     default: ''
+  keychain:
+    description: 'Path of the keychain to use. If omitted, the default login keychain is used.'
+    required: false
+    default: ''
   keychain-password:
-    description: ''
+    description: 'Password for the keychain if specified in the keychain parameter; default login keychain password if the kerchain parameter is omitted.'
     required: false
     default: ''
 runs:
   using: 'node16'
   main: 'dist/index.js'
-  post: 'dist/index.js'
 branding:
   icon: "upload-cloud"
   color: "orange"

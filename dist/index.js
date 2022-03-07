@@ -7394,15 +7394,6 @@ var __importStar = (this && this.__importStar) || function (mod) {
     __setModuleDefault(result, mod);
     return result;
 };
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.Security = void 0;
 const exec = __importStar(__nccwpck_require__(49));
@@ -7432,7 +7423,7 @@ class Security {
     }
     static UnlockKeychain(keychain, password) {
         if (password == null) {
-            throw new Error('Password required.');
+            throw new Error('UnlockKeychain: Password required.');
         }
         if (keychain != null) {
             return exec.exec('security', ['unlock-keychain', '-p', password, keychain]);
@@ -7442,14 +7433,13 @@ class Security {
         }
     }
     static CreateKeychain(keychain, password) {
-        return __awaiter(this, void 0, void 0, function* () {
-            if (password === '') {
-                throw new Error('Password required.');
-            }
-            yield exec.exec('security', ['create-keychain', '-p', password, keychain]);
-            // Default settings
-            return exec.exec('security', ['set-keychain-settings', '-lut', '21600', keychain]);
-        });
+        if (password === '') {
+            throw new Error('CreaterKeychain: Password required.');
+        }
+        return exec.exec('security', ['create-keychain', '-p', `${password}`, keychain]);
+    }
+    static SetKeychainTimeout(keychain, seconds) {
+        return exec.exec('security', ['set-keychain-settings', '-lut', seconds.toString(), keychain]);
     }
     static DeleteKeychain(keychain) {
         return exec.exec('security', ['delete-keychain', keychain]);
@@ -7476,7 +7466,14 @@ class Security {
         return exec.exec('security', ['list-keychains', '-d', 'user', '-s', keychain]);
     }
     static AllowAccessForAppleTools(keychain, password) {
-        return exec.exec('security', ['set-key-partition-list', '-S', 'apple-tool:,apple:', '-s', '-k', password, keychain]);
+        const args = [
+            'set-key-partition-list',
+            '-S', 'apple-tool:,apple:',
+            '-s',
+            '-k', password,
+            keychain
+        ];
+        return exec.exec('security', args);
     }
     static FindGenericPassword(service) {
         return exec.exec('security', ['find-generic-password', '-s', `"${service}"`]);
@@ -7531,48 +7528,37 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__nccwpck_require__(127));
 const os = __importStar(__nccwpck_require__(37));
 const tmp = __importStar(__nccwpck_require__(729));
-const coreCommand = __importStar(__nccwpck_require__(604));
-const fsPromises = __importStar(__nccwpck_require__(292));
+const fs = __importStar(__nccwpck_require__(292));
 const Security_1 = __nccwpck_require__(11);
-const IsPost = !!process.env[`STATE_POST`];
 const IsMacOS = os.platform() === 'darwin';
-function AllowPostProcess() {
-    coreCommand.issueCommand('save-state', { name: 'POST' }, 'true');
-}
-const CustomKeychain = `${process.env.HOME}/Library/Keychains/temp-apple-certificate.keychain-db`;
 function Run() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
             const P12Base64 = core.getInput('p12-base64');
             const P12Password = core.getInput('p12-password');
-            const keychainPassword = core.getInput('keychain-password') || Math.random().toString(36);
-            core.setSecret(keychainPassword);
             if (P12Base64 === '') {
-                throw new Error('p12-base64 is null');
+                throw new Error('p12-base64 is null.');
             }
             if (P12Password === '') {
-                throw new Error('p12-password is null');
+                throw new Error('p12-password is null.');
+            }
+            const keychainPassword = core.getInput('keychain-password');
+            if (keychainPassword === '') {
+                throw new Error('keychain-password is null.');
+            }
+            core.setSecret(keychainPassword);
+            let keychain = core.getInput('keychain');
+            if (keychain === '') {
+                keychain = `${process.env.HOME}/Library/Keychains/login.keychain-db`;
             }
             const P12File = tmp.fileSync();
-            yield fsPromises.writeFile(P12File.name, Buffer.from(P12Base64, 'base64'));
-            yield Security_1.Security.CreateKeychain(CustomKeychain, keychainPassword);
-            yield Security_1.Security.UnlockKeychain(CustomKeychain, keychainPassword);
-            yield Security_1.Security.ImportCertificateFromFile(CustomKeychain, P12File.name, P12Password);
-            yield Security_1.Security.SetListKeychains(CustomKeychain);
-            yield Security_1.Security.AllowAccessForAppleTools(CustomKeychain, keychainPassword);
+            yield fs.writeFile(P12File.name, Buffer.from(P12Base64, 'base64'));
+            yield Security_1.Security.UnlockKeychain(keychain, keychainPassword);
+            yield Security_1.Security.ImportCertificateFromFile(keychain, P12File.name, P12Password);
+            yield Security_1.Security.SetListKeychains(keychain);
+            yield Security_1.Security.AllowAccessForAppleTools(keychain, keychainPassword);
             yield Security_1.Security.ShowListKeychains();
-            yield Security_1.Security.ShowCodeSignings(CustomKeychain);
-        }
-        catch (ex) {
-            core.setFailed(ex.message);
-        }
-    });
-}
-function Cleanup() {
-    return __awaiter(this, void 0, void 0, function* () {
-        core.info('Cleanup');
-        try {
-            yield Security_1.Security.DeleteKeychain(CustomKeychain);
+            yield Security_1.Security.ShowCodeSignings(keychain);
         }
         catch (ex) {
             core.setFailed(ex.message);
@@ -7583,13 +7569,7 @@ if (!IsMacOS) {
     core.setFailed('Action requires macOS agent.');
 }
 else {
-    if (!!IsPost) {
-        Cleanup();
-    }
-    else {
-        Run();
-    }
-    AllowPostProcess();
+    Run();
 }
 
 
